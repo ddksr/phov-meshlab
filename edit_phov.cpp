@@ -24,16 +24,15 @@
   History
 $Log: meshedit.cpp,v $
 ****************************************************************************/
-
-#include "edit_phov.h"
-#include "edit_phov_client.h"
+#include <Qt>
 #include <QSettings>
 #include <QDir>
+#include <QFileDialog>
+#include "edit_phov.h"
+#include "edit_phov_client.h"
 
 using namespace std;
 using namespace vcg;
-
-
 
 EditPhovPlugin::EditPhovPlugin() {
 	qFont.setFamily("Helvetica");
@@ -46,12 +45,14 @@ EditPhovPlugin::EditPhovPlugin() {
 
 	isEnabled = false;
 	if (phovID.isEmpty()) {
-		EditPhovClient client;
+		EditPhovClient client(*this);
 		phovID = client.getPhovID();
-		saveSettings();
+		qDebug() << "test init: " << phovID;
 	} else {
 		isEnabled = true;
+		saveSettings();
 	}
+	qDebug() << phovID;
 }
 
 void EditPhovPlugin::loadSettings() {
@@ -72,4 +73,32 @@ const QString EditPhovPlugin::Info()
 	return tr("PHOV photogrammetry service for Meshlab.");
 }
 
+bool EditPhovPlugin::StartEdit(MeshDocument &_md, GLArea *_gla ) {
+	this->md = &_md;
+	gla = _gla;
 
+	if (phovID.isEmpty()) {
+		phovID = 
+	}
+	
+	if (isWaiting) {
+		// check if model ready, be verbose
+		downloadModel();
+	}
+	else {
+		uploadImages();
+	}
+	
+	return true;
+}
+
+void EditPhovPlugin::uploadImages() {
+    QWidget* parent = gla->window();
+
+	QString filename = QFileDialog::getOpenFileName(parent->parentWidget(),
+													tr("Open images for PHOV"),
+													QDir::homePath(),
+													tr("JPG Image Files ZIP (*.zip)"));
+	qDebug() << filename;
+	
+}

@@ -29,6 +29,36 @@ $Log: meshedit.cpp,v $
 
 using namespace std;
 
-EditPhovClient::EditPhovClient() {
-
+EditPhovClient::EditPhovClient(QObject &qObj) {
+	am = new QNetworkAccessManager(&qObj);
+	apiUrl = QString("http://localhost/~sigi/phov/phov.php");
 }
+
+void EditPhovClient::uploadFile(const QString &filename, QString &phovId) {
+	QUrl url(apiUrl + "?method=upload&id=");
+	request = QNetworkRequest(url);
+}
+
+QString EditPhovClient::getPhovID() {
+	if (!resultGetPhovID->isEmpty()) {
+return QString(*resultGetPhovID);
+	}
+
+	QUrl url(QString(apiUrl + "?method=get_id"));
+
+	QObject::connect(am, SIGNAL(finished(QNetworkReply*)),
+					 am->parent(), SLOT(finishedSlotGetPhovID(QNetworkReply*)));
+
+	QNetworkReply* reply = am->get(QNetworkRequest(url));
+
+	QString test("test 123 123 123 ");
+	resultGetPhovID = &test;
+
+return QString("");
+}
+
+void EditPhovClient::finishedSlotGetPhovID(QNetworkReply* reply) {
+	QString test("blah 123");
+	resultGetPhovID = &test;
+}
+

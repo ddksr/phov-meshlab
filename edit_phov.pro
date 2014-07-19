@@ -12,3 +12,5 @@ SOURCES       = edit_phov_factory.cpp \
 TARGET        = edit_phov
 
 RESOURCES     = edit_phov.qrc
+
+QT += network

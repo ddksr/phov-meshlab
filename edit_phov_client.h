@@ -25,16 +25,32 @@
 #define EDIT_PHOV_CLIENT_H
 
 #include <QString>
+#include <QUrl>
+#include <Qt>
+#include <QNetworkAccessManager>
+#include <QNetworkRequest>
+#include <QUrl>
+#include <QNetworkReply>
+ 
 
 using namespace std;
 
 class EditPhovClient {
 public:
-	EditPhovClient();
+	EditPhovClient(QObject &qObj);
 	virtual ~EditPhovClient() {}
 
-	static const QString getPhovID() { return QString("blah"); }
-	void downloadFile(const QString &filename) {}
+	QString getPhovID();
+	void finishedSlotGetPhovID(QNetworkReply* reply);
+	void downloadFile(const QString &filename, QString &phovId) {}
+	void uploadFile(const QString &filename, QString &phovId);
+
+private:
+	QString apiUrl;
+
+	QNetworkAccessManager *am;
+	QNetworkRequest request;
+	QString *resultGetPhovID;
 };
 
 #endif

@@ -31,7 +31,7 @@ EditPhovFactory::EditPhovFactory()
 	actionList << editPHOV;
 	
 	foreach(QAction *editAction, actionList)
-		editAction->setCheckable(true); 
+		editAction->setCheckable(false); 
 }
 
 //gets a list of actions available from this plugin

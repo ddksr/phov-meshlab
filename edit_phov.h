@@ -26,6 +26,11 @@
 
 #include <QObject>
 #include <common/interfaces.h>
+#include <meshlab/glarea.h>
+#include <Qt>
+#include <QMessageBox>
+#include <QDialog>
+#include <QDockWidget>
 
 class EditPhovPlugin : public QObject, public MeshEditInterface
 {
@@ -36,22 +41,30 @@ public:
     EditPhovPlugin();
     virtual ~EditPhovPlugin() {}
 
-	bool StartEdit(MeshModel &/*m*/, GLArea * /*parent*/) {};
-    void EndEdit(MeshModel &/*m*/, GLArea * /*parent*/) {};
-    void Decorate(MeshModel &/*m*/, GLArea * /*parent*/, QPainter *p) {};
-    void Decorate (MeshModel &/*m*/, GLArea * ) {};
-    void mousePressEvent(QMouseEvent *, MeshModel &, GLArea * ) {};
-    void mouseMoveEvent(QMouseEvent *, MeshModel &, GLArea * ) {};
-    void mouseReleaseEvent(QMouseEvent *event, MeshModel &/*m*/, GLArea * ) {};
-	void drawFace(CMeshO::FacePointer fp,MeshModel &m, GLArea *gla, QPainter *p) {};
+	bool StartEdit(MeshDocument &/*m*/, GLArea * /*parent*/);
+	static const QString Info();
 	
-    static const QString Info();
+    void EndEdit(MeshModel &/*m*/, GLArea * /*parent*/) {}
+    void Decorate(MeshModel &/*m*/, GLArea * /*parent*/, QPainter *p) {}
+    void Decorate (MeshModel &/*m*/, GLArea * ) {}
+    void mousePressEvent(QMouseEvent *, MeshModel &, GLArea * ) {}
+    void mouseMoveEvent(QMouseEvent *, MeshModel &, GLArea * ) {}
+    void mouseReleaseEvent(QMouseEvent *event, MeshModel &/*m*/, GLArea * ) {}
+	void drawFace(CMeshO::FacePointer fp,MeshModel &m, GLArea *gla, QPainter *p) {}
 
+	// IMPORTANT: because if true, dialog will fail
+	bool isSingleMeshEdit() const {return false;}
+	
 	QFont qFont;
+
+	MeshDocument *md; 
+	GLArea * gla;
 	
 private:
 	void loadSettings();
 	void saveSettings();
+	void uploadImages();
+	void downloadModel() {}
 
 	QString phovID;
 	QString settingsFile;
@@ -60,3 +73,4 @@ private:
 };
 
 #endif
+
