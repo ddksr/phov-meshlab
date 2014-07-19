@@ -24,12 +24,17 @@
 #ifndef EDIT_PHOV_CLIENT_H
 #define EDIT_PHOV_CLIENT_H
 
+#include <QString>
+
 using namespace std;
 
 class EditPhovClient {
 public:
 	EditPhovClient();
 	virtual ~EditPhovClient() {}
+
+	static const QString getPhovID() { return QString("blah"); }
+	void downloadFile(const QString &filename) {}
 };
 
 #endif
