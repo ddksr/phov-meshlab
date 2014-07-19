@@ -48,6 +48,12 @@ public:
     static const QString Info();
 
 	QFont qFont;
+	QString phovID;
+	QString settingsFile;
+
+private:
+	void loadSettings();
+	void saveSettings();
 };
 
 #endif

@@ -31,13 +31,37 @@ $Log: meshedit.cpp,v $
 #include "edit_phov.h"
 #include <wrap/gl/pick.h>
 #include <wrap/qt/gl_label.h>
+#include <QSettings>
+#include <QDir>
 
 using namespace std;
 using namespace vcg;
 
+
+
 EditPhovPlugin::EditPhovPlugin() {
 	qFont.setFamily("Helvetica");
-	qFont.setPixelSize(12);    
+	qFont.setPixelSize(12);
+
+	settingsFile = QDir::homePath()+ QDir::separator() + "meshlab_phov.ini";
+	loadSettings();
+	qDebug() << "Init Edit PHOV";
+
+	if (phovID.isEmpty()) {
+		//TODO: obtain PHOVID
+	}
+}
+
+void EditPhovPlugin::loadSettings() {
+	QSettings settings(settingsFile, QSettings::NativeFormat);
+    phovID = settings.value("phov_id", "").toString();
+}
+
+void EditPhovPlugin::saveSettings() {
+	QSettings settings(settingsFile, QSettings::NativeFormat);
+    settings.setValue("phov_id", phovID);
+	settings.sync();
+	qDebug() << settingsFile;
 }
 
 const QString EditPhovPlugin::Info() 
