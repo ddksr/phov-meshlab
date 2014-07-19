@@ -42,7 +42,7 @@ EditPhovPlugin::EditPhovPlugin() {
 
 const QString EditPhovPlugin::Info() 
 {
-	return tr("Return detailed info about a picked face of the model.");
+	return tr("PHOV photogrammetry service for Meshlab.");
 }
 
 
