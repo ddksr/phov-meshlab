@@ -26,7 +26,7 @@
 
 EditPhovFactory::EditPhovFactory()
 {
-	editPHOV = new QAction(QIcon(":/images/icon_info.png"),"PHOV", this);
+	editPHOV = new QAction(QIcon(":/images/phov.png"),"PHOV", this);
 	
 	actionList << editPHOV;
 	

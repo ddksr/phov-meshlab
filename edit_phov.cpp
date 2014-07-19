@@ -43,25 +43,32 @@ EditPhovPlugin::EditPhovPlugin() {
 	qFont.setFamily("Helvetica");
 	qFont.setPixelSize(12);
 
-	settingsFile = QDir::homePath()+ QDir::separator() + "meshlab_phov.ini";
-	loadSettings();
 	qDebug() << "Init Edit PHOV";
 
+	settingsFile = QDir::homePath()+ QDir::separator() + "meshlab_phov.ini";
+	loadSettings();
+
+	isEnabled = false;
 	if (phovID.isEmpty()) {
 		//TODO: obtain PHOVID
+
+		saveSettings();
+	} else {
+		isEnabled = true;
 	}
 }
 
 void EditPhovPlugin::loadSettings() {
 	QSettings settings(settingsFile, QSettings::NativeFormat);
     phovID = settings.value("phov_id", "").toString();
+	isWaiting = settings.value("waiting", false).toBool();
 }
 
 void EditPhovPlugin::saveSettings() {
 	QSettings settings(settingsFile, QSettings::NativeFormat);
     settings.setValue("phov_id", phovID);
+	settings.setValue("waiting", isWaiting);
 	settings.sync();
-	qDebug() << settingsFile;
 }
 
 const QString EditPhovPlugin::Info() 
