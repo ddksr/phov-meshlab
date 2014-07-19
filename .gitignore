@@ -21,3 +21,4 @@
 *.app
 qrc_*
 moc_*
+Makefile
