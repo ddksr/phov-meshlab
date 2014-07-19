@@ -2,7 +2,7 @@
 * MeshLab                                                           o o     *
 * A versatile mesh processing toolbox                             o     o   *
 *                                                                _   O  _   *
-* Copyright(C) 2005                                                \/)\/    *
+* Copyright(C) 2005-2008                                           \/)\/    *
 * Visual Computing Lab                                            /\/|      *
 * ISTI - Italian National Research Council                           |      *
 *                                                                    \      *
@@ -21,33 +21,35 @@
 *                                                                           *
 ****************************************************************************/
 
-#ifndef EDIT_PHOV_H
-#define EDIT_PHOV_H
+
+#ifndef EditPhovFactory_H
+#define EditPhovFactory_H
 
 #include <QObject>
 #include <common/interfaces.h>
 
-class EditPhovPlugin : public QObject, public MeshEditInterface
+class EditPhovFactory : public QObject, public MeshEditInterfaceFactory
 {
 	Q_OBJECT
-	Q_INTERFACES(MeshEditInterface)
-		
+	MESHLAB_PLUGIN_IID_EXPORTER(MESH_EDIT_INTERFACE_FACTORY_IID)
+	Q_INTERFACES(MeshEditInterfaceFactory)
+
 public:
-    EditPhovPlugin();
-    virtual ~EditPhovPlugin() {}
+	EditPhovFactory();
+	virtual ~EditPhovFactory() { delete editPHOV; }
 
-	bool StartEdit(MeshModel &/*m*/, GLArea * /*parent*/) {};
-    void EndEdit(MeshModel &/*m*/, GLArea * /*parent*/) {};
-    void Decorate(MeshModel &/*m*/, GLArea * /*parent*/, QPainter *p) {};
-    void Decorate (MeshModel &/*m*/, GLArea * ) {};
-    void mousePressEvent(QMouseEvent *, MeshModel &, GLArea * ) {};
-    void mouseMoveEvent(QMouseEvent *, MeshModel &, GLArea * ) {};
-    void mouseReleaseEvent(QMouseEvent *event, MeshModel &/*m*/, GLArea * ) {};
-	void drawFace(CMeshO::FacePointer fp,MeshModel &m, GLArea *gla, QPainter *p) {};
+	//gets a list of actions available from this plugin
+	virtual QList<QAction *> actions() const;
 	
-    static const QString Info();
-
-	QFont qFont;
+	//get the edit tool for the given action
+	virtual MeshEditInterface* getMeshEditInterface(QAction *);
+	
+	//get the description for the given action
+	virtual QString getEditToolDescription(QAction *);
+	
+private:
+	QList <QAction *> actionList;
+	QAction *editPHOV;
 };
 
 #endif

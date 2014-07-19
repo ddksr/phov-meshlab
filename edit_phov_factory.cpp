@@ -2,7 +2,7 @@
 * MeshLab                                                           o o     *
 * A versatile mesh processing toolbox                             o     o   *
 *                                                                _   O  _   *
-* Copyright(C) 2005                                                \/)\/    *
+* Copyright(C) 2005-2008                                           \/)\/    *
 * Visual Computing Lab                                            /\/|      *
 * ISTI - Italian National Research Council                           |      *
 *                                                                    \      *
@@ -21,33 +21,37 @@
 *                                                                           *
 ****************************************************************************/
 
-#ifndef EDIT_PHOV_H
-#define EDIT_PHOV_H
+#include "edit_phov_factory.h"
+#include "edit_phov.h"
 
-#include <QObject>
-#include <common/interfaces.h>
-
-class EditPhovPlugin : public QObject, public MeshEditInterface
+EditPhovFactory::EditPhovFactory()
 {
-	Q_OBJECT
-	Q_INTERFACES(MeshEditInterface)
-		
-public:
-    EditPhovPlugin();
-    virtual ~EditPhovPlugin() {}
-
-	bool StartEdit(MeshModel &/*m*/, GLArea * /*parent*/) {};
-    void EndEdit(MeshModel &/*m*/, GLArea * /*parent*/) {};
-    void Decorate(MeshModel &/*m*/, GLArea * /*parent*/, QPainter *p) {};
-    void Decorate (MeshModel &/*m*/, GLArea * ) {};
-    void mousePressEvent(QMouseEvent *, MeshModel &, GLArea * ) {};
-    void mouseMoveEvent(QMouseEvent *, MeshModel &, GLArea * ) {};
-    void mouseReleaseEvent(QMouseEvent *event, MeshModel &/*m*/, GLArea * ) {};
-	void drawFace(CMeshO::FacePointer fp,MeshModel &m, GLArea *gla, QPainter *p) {};
+	editPHOV = new QAction(QIcon(":/images/icon_info.png"),"PHOV", this);
 	
-    static const QString Info();
+	actionList << editPHOV;
+	
+	foreach(QAction *editAction, actionList)
+		editAction->setCheckable(true); 
+}
 
-	QFont qFont;
-};
+//gets a list of actions available from this plugin
+QList<QAction *> EditPhovFactory::actions() const
+{
+	return actionList;
+}
 
-#endif
+//get the edit tool for the given action
+MeshEditInterface* EditPhovFactory::getMeshEditInterface(QAction *action)
+{
+	if(action == editPHOV)
+	{
+		return new EditPhovPlugin();
+	} else assert(0); //should never be asked for an action that isnt here
+}
+
+QString EditPhovFactory::getEditToolDescription(QAction *)
+{
+	return EditPhovPlugin::Info();
+}
+
+MESHLAB_PLUGIN_NAME_EXPORTER(EditPhovFactory)
