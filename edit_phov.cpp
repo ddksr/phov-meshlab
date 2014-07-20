@@ -29,7 +29,6 @@ $Log: meshedit.cpp,v $
 #include <QDir>
 #include <QFileDialog>
 #include "edit_phov.h"
-#include "edit_phov_client.h"
 
 using namespace std;
 using namespace vcg;
@@ -37,7 +36,7 @@ using namespace vcg;
 EditPhovPlugin::EditPhovPlugin() {
 	qFont.setFamily("Helvetica");
 	qFont.setPixelSize(12);
-
+	
 	qDebug() << "Init Edit PHOV";
 
 	settingsFile = QDir::homePath()+ QDir::separator() + "meshlab_phov.ini";
@@ -45,9 +44,7 @@ EditPhovPlugin::EditPhovPlugin() {
 
 	isEnabled = false;
 	if (phovID.isEmpty()) {
-		EditPhovClient client(*this);
-		phovID = client.getPhovID();
-		qDebug() << "test init: " << phovID;
+		getPhovId();
 	} else {
 		isEnabled = true;
 		saveSettings();
@@ -78,19 +75,103 @@ bool EditPhovPlugin::StartEdit(MeshDocument &_md, GLArea *_gla ) {
 	gla = _gla;
 
 	if (phovID.isEmpty()) {
-		phovID = 
-	}
-	
-	if (isWaiting) {
-		// check if model ready, be verbose
-		downloadModel();
+		// TODO: message that something is wrong
 	}
 	else {
-		uploadImages();
+		if (isWaiting || true) {
+			// check if model ready, be verbose
+			if (checkDownloadAvailable()) {
+				qDebug() << "Download IS available";
+				downloadModel();
+			}
+			else {
+				qDebug() << "Download NOT available";
+				//TODO: inform no download available
+			}
+		}
+		else {
+			uploadImages();
+		}
 	}
-	
 	return true;
 }
+
+void EditPhovPlugin::getPhovId() {
+	QNetworkAccessManager nm(this);
+	QEventLoop eventLoop;
+	
+	qDebug() << "getPhovId";
+	QUrl url(apiURL);
+	url.addQueryItem("method", QString("get_id"));
+	qDebug() << url;
+	QObject::connect(&nm, SIGNAL(finished(QNetworkReply*)),
+					 &eventLoop, SLOT(quit()));
+	QNetworkReply* reply = nm.get(QNetworkRequest(url));
+	eventLoop.exec(); 
+	if (reply->error() == QNetworkReply::NoError) {
+        //success
+        phovID = QString(reply->readAll());
+		saveSettings();
+    }
+    else {
+        //failure
+        qDebug() << "Failure" <<reply->errorString();
+    }
+	delete reply;
+	qDebug() << "getPhovId end";
+}
+
+bool EditPhovPlugin::checkDownloadAvailable() {
+	bool isAvailable = false;
+	
+	QNetworkAccessManager nm(this);
+	QEventLoop eventLoop;
+	qDebug() << "downloadAvaiblable";
+	QUrl url(apiURL);
+	url.addQueryItem("method", QString("check_download"));
+	url.addQueryItem("id", phovID);
+
+	qDebug() << url;
+	QObject::connect(&nm, SIGNAL(finished(QNetworkReply*)),
+	 				 &eventLoop, SLOT(quit()));
+	QNetworkReply* reply = nm.get(QNetworkRequest(url));
+	eventLoop.exec(); 
+	if (reply->error() == QNetworkReply::NoError) {
+		isAvailable = QString(reply->readAll()).toInt() == 1;
+    }
+    else {
+        //failure
+        qDebug() << "Failure" <<reply->errorString();
+    }
+	delete reply;
+	return isAvailable;
+}
+
+void EditPhovPlugin::downloadModel() {
+	QNetworkAccessManager nm(this);
+	QEventLoop eventLoop;
+	qDebug() << "downloadModel";
+	QUrl url(apiURL);
+	url.addQueryItem("method", QString("download"));
+	url.addQueryItem("id", phovID);
+
+	qDebug() << url;
+	QObject::connect(&nm, SIGNAL(finished(QNetworkReply*)),
+	 				 &eventLoop, SLOT(quit()));
+	QNetworkReply* reply = nm.get(QNetworkRequest(url));
+	eventLoop.exec(); 
+	if (reply->error() == QNetworkReply::NoError) {
+		qDebug() << "SUCCESS - CAN DOWNLOAD !!!! ";
+    }
+    else {
+        //failure
+        qDebug() << "Failure" <<reply->errorString();
+    }
+
+	delete reply;
+	qDebug() << "downloadModelEnd end";
+}
+
 
 void EditPhovPlugin::uploadImages() {
     QWidget* parent = gla->window();

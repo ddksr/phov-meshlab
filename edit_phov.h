@@ -31,6 +31,10 @@
 #include <QMessageBox>
 #include <QDialog>
 #include <QDockWidget>
+#include <QNetworkAccessManager>
+#include <QNetworkRequest>
+#include <QUrl>
+#include <QNetworkReply>
 
 class EditPhovPlugin : public QObject, public MeshEditInterface
 {
@@ -40,6 +44,8 @@ class EditPhovPlugin : public QObject, public MeshEditInterface
 public:
     EditPhovPlugin();
     virtual ~EditPhovPlugin() {}
+
+	QString apiURL = QString("http://localhost/~sigi/phov/phov.php");
 
 	bool StartEdit(MeshDocument &/*m*/, GLArea * /*parent*/);
 	static const QString Info();
@@ -58,18 +64,23 @@ public:
 	QFont qFont;
 
 	MeshDocument *md; 
-	GLArea * gla;
-	
+	GLArea *gla;
+
 private:
 	void loadSettings();
 	void saveSettings();
 	void uploadImages();
-	void downloadModel() {}
-
+	void getPhovId();
+	bool checkDownloadAvailable();
+	void downloadModel();
+	
 	QString phovID;
 	QString settingsFile;
 	bool isEnabled;
 	bool isWaiting;
+
+public slots:
+	void uploadImagesCallback() {}
 };
 
 #endif
