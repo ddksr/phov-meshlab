@@ -28,6 +28,7 @@ $Log: meshedit.cpp,v $
 #include <QSettings>
 #include <QDir>
 #include <QFileDialog>
+#include <QHttpRequestHeader>
 #include "edit_phov.h"
 
 using namespace std;
@@ -78,7 +79,7 @@ bool EditPhovPlugin::StartEdit(MeshDocument &_md, GLArea *_gla ) {
 		// TODO: message that something is wrong
 	}
 	else {
-		if (isWaiting || true) {
+		if (isWaiting) {
 			// check if model ready, be verbose
 			if (checkDownloadAvailable()) {
 				qDebug() << "Download IS available";
@@ -148,6 +149,13 @@ bool EditPhovPlugin::checkDownloadAvailable() {
 }
 
 void EditPhovPlugin::downloadModel() {
+	QWidget* parent = gla->window();
+	QString filename = QFileDialog::getSaveFileName(parent->parentWidget(),
+													tr("Save PHOV PLY model"),
+													QDir::homePath(),
+													tr("PLY mesh (*.ply)"));
+
+	
 	QNetworkAccessManager nm(this);
 	QEventLoop eventLoop;
 	qDebug() << "downloadModel";
@@ -162,13 +170,20 @@ void EditPhovPlugin::downloadModel() {
 	eventLoop.exec(); 
 	if (reply->error() == QNetworkReply::NoError) {
 		qDebug() << "SUCCESS - CAN DOWNLOAD !!!! ";
+		QFile file(filename);
+		file.open(QIODevice::WriteOnly);
+		file.write(reply->readAll());
+		file.close();
+
+		isWaiting = true;
+		saveSettings();
     }
     else {
         //failure
         qDebug() << "Failure" <<reply->errorString();
     }
 
-	delete reply;
+	delete reply;	
 	qDebug() << "downloadModelEnd end";
 }
 
@@ -176,10 +191,50 @@ void EditPhovPlugin::downloadModel() {
 void EditPhovPlugin::uploadImages() {
     QWidget* parent = gla->window();
 
-	QString filename = QFileDialog::getOpenFileName(parent->parentWidget(),
+	QString filepath = QFileDialog::getOpenFileName(parent->parentWidget(),
 													tr("Open images for PHOV"),
 													QDir::homePath(),
 													tr("JPG Image Files ZIP (*.zip)"));
-	qDebug() << filename;
+	qDebug() << filepath;
+	// filepath -> filename
 	
+	QFile file(filepath);
+	QString filename = QFileInfo(filepath).baseName();
+	
+	// HTTP request
+	QHttp *http = new QHttp(this);
+	QString boundary = "---------------------------193971182219750";
+	
+	QByteArray datas(QString("--" + boundary + "\r\n").toAscii());
+	datas += "Content-Disposition: form-data; name=\"uploadedZip\"; filename=\"";
+	datas += filename.toAscii();
+	datas += "\"\r\n";
+	datas += "Content-Type: application/zip\r\n\r\n";
+ 
+	
+	if (!file.open(QIODevice::ReadOnly))
+		return;
+ 
+	datas += file.readAll();
+	datas += "\r\n";
+	datas += QString("--" + boundary + "\r\n").toAscii();
+	datas += "Content-Disposition: form-data; name=\"";
+	datas += "uploadedZip";
+	datas += "\"\r\n\r\n";
+	datas += "Uploader\r\n";
+	datas += QString("--" + boundary + "--\r\n").toAscii();
+
+	QUrl url(apiURL);
+	url.addQueryItem("method", QString("upload"));
+	url.addQueryItem("id", phovID);
+	QHttpRequestHeader header("POST", url.toString());
+	header.setValue("Host", url.host());
+	header.setValue("Content-Type", "multipart/form-data; boundary=" + boundary);
+	header.setValue("Content-Length", QString::number(datas.length()));
+ 
+	http->setHost(url.host());
+	http->request(header, datas);
+
+	isWaiting = true;
+	saveSettings();
 }
