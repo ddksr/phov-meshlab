@@ -2,10 +2,10 @@
 #define EDIT_PHOV_API
 #include <Qt>
 
-QString apiUrlGetId("http://localhost/~sigi/phov/phov.php?method=get_id");
-QString apiUrlCheckDownload("http://localhost/~sigi/phov/phov.php?method=check_download&id=%1");
-QString apiUrlDownload("http://localhost/~sigi/phov/phov.php?method=download&id=%1");
-QString apiUrlUpload("http://localhost/~sigi/phov/phov.php?method=upload&id=%1");
-QString apiUrlFinish("http://localhost/~sigi/phov/phov.php?method=finish&id=%1");
+QString apiUrlGetId("http://localhost/phov.php?method=get_id");
+QString apiUrlCheckDownload("http://localhost/phov.php?method=check_download&id=%1");
+QString apiUrlDownload("http://localhost/phov.php?method=download&id=%1");
+QString apiUrlUpload("http://localhost/phov.php?method=upload&id=%1");
+QString apiUrlFinish("http://localhost/phov.php?method=finish&id=%1");
 
 #endif

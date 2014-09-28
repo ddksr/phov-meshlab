@@ -33,10 +33,6 @@ $Log: meshedit.cpp,v $
 #include "edit_phov.h"
 #include "edit_phov_api.h"
 
-// TODO: remove
-#include <unistd.h>
-
-
 using namespace std;
 using namespace vcg;
 
@@ -89,11 +85,21 @@ bool EditPhovPlugin::StartEdit(MeshDocument &_md, GLArea *_gla ) {
 								 "There was something terribly wrong. Please reupload the images.");
 			isWaiting = false;
 			saveSettings();
+			return false;
 		}
-		else if (checkDownloadAvailable()) {
+		int status = checkDownloadAvailable();
+		if (status == 1) {
 			// check if model ready, be verbose
 			qDebug() << "Download IS available";
 			downloadModel();
+		} else if (status == -1) {
+			qDebug() << "Download IS error";
+			QMessageBox::warning(parent->parentWidget(),
+								 "PHOV model download",
+								 "There was an error during the process. Try another image set.");
+			isWaiting = false;
+			phovID = "";
+			saveSettings();
 		}
 		else {
 			qDebug() << "Download NOT available";
@@ -108,10 +114,17 @@ bool EditPhovPlugin::StartEdit(MeshDocument &_md, GLArea *_gla ) {
 		if (phovID.isEmpty()) {
 			getPhovId();
 		}
-		uploadImages();
+		if (phovID.isEmpty()) {
+			QMessageBox::warning(parent->parentWidget(),
+								 "PHOV image upload",
+								 "The server seems to be busy. Please try again later.");
+		}
+		else {
+			uploadImages();
+		}
 	}
 
-	return true;
+	return false;
 }
 
 void EditPhovPlugin::getPhovId() {
@@ -120,6 +133,7 @@ void EditPhovPlugin::getPhovId() {
 	
 	qDebug() << "getPhovId";
 	QUrl url(apiUrlGetId);
+	
 	QByteArray postData;
 	postData.append("notify=mailto:sigi.kajzer@gmail.com");
 	qDebug() << url;
@@ -134,9 +148,15 @@ void EditPhovPlugin::getPhovId() {
 	eventLoop.exec(); 
 	if (reply->error() == QNetworkReply::NoError) {
         //success
-        phovID = QString(reply->readAll());
-		qDebug() << "PHOV ID";
-		saveSettings();
+		QRegExp rgx(rxId);
+		int pos = rgx.indexIn(reply->readAll());
+		if (pos > -1) {
+			phovID = rgx.cap(1);
+			qDebug() << "PHOV ID: " << phovID;
+			saveSettings();
+		} else {
+			qDebug() << "no PHOV ID";
+		}
     }
     else {
         //failure
@@ -146,8 +166,8 @@ void EditPhovPlugin::getPhovId() {
 	qDebug() << "getPhovId end";
 }
 
-bool EditPhovPlugin::checkDownloadAvailable() {
-	bool isAvailable = false;
+int EditPhovPlugin::checkDownloadAvailable() {
+	int isAvailable = 0;
 	
 	QNetworkAccessManager nm(this);
 	QEventLoop eventLoop;
@@ -160,10 +180,22 @@ bool EditPhovPlugin::checkDownloadAvailable() {
 	QNetworkReply* reply = nm.get(QNetworkRequest(url));
 	eventLoop.exec(); 
 	if (reply->error() == QNetworkReply::NoError) {
-		isAvailable = QString(reply->readAll()).toInt() == 1;
+		QString response(reply->readAll());
+		qDebug() << response;
+		
+		QRegExp rgx(rxError);
+		int pos = rgx.indexIn(response);
+		if (pos != -1 ) {
+			isAvailable = -1;
+		} else {
+			QRegExp rgx2(rxSuccess);
+			int pos = rgx2.indexIn(response);
+			if (pos != -1 ) {
+				isAvailable = 1;
+			}
+		}
     }
     else {
-        //failure
         qDebug() << "Failure" <<reply->errorString();
     }
 	delete reply;
@@ -200,7 +232,6 @@ void EditPhovPlugin::downloadModel() {
 		saveSettings();
     }
     else {
-        //failure
         qDebug() << "Failure" <<reply->errorString();
     }
 
@@ -215,25 +246,38 @@ void EditPhovPlugin::uploadImages() {
 	QStringList files = QFileDialog::getOpenFileNames(parent->parentWidget(),
 													  tr("Open images for PHOV"),
 													  tr("JPEG/PNG Image Files"));
+
+	int numOfFiles = files.size();
+
+	if (numOfFiles <= 0) {
+		return;
+	}
 	
 	QProgressDialog progress("Uploading files to PHOV ...",
 							 "Abort Upload",
-							 0, files.size(),
+							 0, numOfFiles,
 							 parent->parentWidget());
 	progress.setWindowModality(Qt::WindowModal);
 	progress.show();
-	for (int i = 0; i < files.size(); ++i) {
+	progress.setValue(0);
+	for (int i = 0; i < numOfFiles; ++i) {
 		QString filepath = files.at(i);
 		qDebug() << "Uploading " << filepath;
 		QFile file(filepath);
+		
 		QString filename = QFileInfo(filepath).baseName();
 	
 		// HTTP request
 		QHttp *http = new QHttp(this);
+		QEventLoop eventLoop;
+		connect(http, SIGNAL(done(bool)),
+				&eventLoop, SLOT(quit()));
+		
+		
 		QString boundary = "---------------------------193971182219750";
 	
 		QByteArray datas(QString("--" + boundary + "\r\n").toAscii());
-		datas += "Content-Disposition: form-data; name=\"uploadedImage\"; filename=\"";
+		datas += "Content-Disposition: form-data; name=\"file\"; filename=\"";
 		datas += filename.toAscii();
 		datas += "\"\r\n";
 		datas += "Content-Type: image/jpeg\r\n\r\n";
@@ -245,7 +289,7 @@ void EditPhovPlugin::uploadImages() {
 		datas += "\r\n";
 		datas += QString("--" + boundary + "\r\n").toAscii();
 		datas += "Content-Disposition: form-data; name=\"";
-		datas += "uploadedImage";
+		datas += "file";
 		datas += "\"\r\n\r\n";
 		datas += "Uploader\r\n";
 		datas += QString("--" + boundary + "--\r\n").toAscii();
@@ -254,23 +298,37 @@ void EditPhovPlugin::uploadImages() {
 
 		QHttpRequestHeader header("POST", url.toString());
 		header.setValue("Host", url.host());
-		header.setValue("Content-Type", "multipart/form-data; boundary=" + boundary);
-		header.setValue("Content-Length", QString::number(datas.length()));
+		header.setValue("Content-Type",
+						"multipart/form-data; boundary=" + boundary);
+		header.setValue("Content-Length",
+						QString::number(datas.length()));
+		
  
 		http->setHost(url.host());
 		http->request(header, datas);
-		
-		progress.setValue(i);
+
+		eventLoop.exec();
+ 
+		progress.setValue(i + 1);
 		if (progress.wasCanceled()) {
-			qDebug() << "Canceld upload";
+			qDebug() << "Canceled upload";
 			isSuccess = false;
             break;
 		}
 		qDebug() << "Finished " << filepath << "!";
+
+		delete http;
 	}
-	progress.setValue(files.size());
 	if (isSuccess) {
-		finishUpload();
+		int status = QMessageBox::question(parent->parentWidget(),
+										   "PHOV model upload",
+										   "Do you wish to finish the upload and start the model processing?",
+			 QMessageBox::Yes | QMessageBox::No);
+		if (status == QMessageBox::Yes) {
+			finishUpload();
+		}
+	} else {
+		progress.setValue(numOfFiles);
 	}
 	
 }
@@ -300,3 +358,29 @@ void EditPhovPlugin::finishUpload() {
 	delete reply;
 	
 }
+
+// void EditPhovPlugin::deleteModel() {
+// 	QNetworkAccessManager nm(this);
+// 	QEventLoop eventLoop;
+	
+// 	QUrl url(apiUrlDelete.arg(phovID));
+// 	QByteArray postData;
+	
+// 	QNetworkRequest request(url);    
+// 	request.setHeader(QNetworkRequest::ContentTypeHeader, 
+// 					  "application/x-www-form-urlencoded");
+	
+// 	QObject::connect(&nm, SIGNAL(finished(QNetworkReply*)),
+// 					 &eventLoop, SLOT(quit()));
+// 	QNetworkReply* reply = nm.post(request, postData);
+// 	eventLoop.exec(); 
+// 	if (reply->error() == QNetworkReply::NoError) {
+// 		qDebug() << "Success";
+//     }
+//     else {
+//         //failure
+//         qDebug() << "Failure" <<reply->errorString();
+//     }
+// 	delete reply;
+// 	qDebug() << "delete end";
+// }

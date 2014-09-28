@@ -69,9 +69,10 @@ private:
 	void saveSettings();
 	void uploadImages();
 	void getPhovId();
-	bool checkDownloadAvailable();
+	int checkDownloadAvailable();
 	void downloadModel();
 	void finishUpload();
+	void deleteModel();
 	
 	QString phovID;
 	QString settingsFile;
