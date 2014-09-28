@@ -45,8 +45,6 @@ public:
     EditPhovPlugin();
     virtual ~EditPhovPlugin() {}
 
-	QString apiURL = QString("http://localhost/~sigi/phov/phov.php");
-
 	bool StartEdit(MeshDocument &/*m*/, GLArea * /*parent*/);
 	static const QString Info();
 	
@@ -73,6 +71,7 @@ private:
 	void getPhovId();
 	bool checkDownloadAvailable();
 	void downloadModel();
+	void finishUpload();
 	
 	QString phovID;
 	QString settingsFile;
