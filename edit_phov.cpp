@@ -31,7 +31,7 @@ $Log: meshedit.cpp,v $
 #include <QProgressDialog>
 #include <QHttpRequestHeader>
 #include "edit_phov.h"
-#include "phov_api.h"
+#include "edit_phov_api.h"
 
 // TODO: remove
 #include <unistd.h>
