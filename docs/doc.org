@@ -1,0 +1,126 @@
+#+TITLE: Meshlab PHOV
+#+AUTHOR: Žiga Stopinšek
+#+EMAIL: ziga@stopinsek.eu
+#+DATE: 26. september 2014
+#+LANGUAGE: sl
+#+OPTIONS: H:5 num:t toc:nil \n:nil @:t ::t |:t ^:nil -:t f:t *:t <:t
+#+LATEX_HEADER: \selectlanguage{slovene} 
+* Opis orodja
+Mehlab je programska oprema za ogledovanje, urejanje, manipuliranje in izvažanje 3D modelov. Sam po sebi
+ne omogoča fotogrametrije, vendar pa že vsebuje orodje Arc3D, ki omogoča ogledovanje in urejanje
+fotogrametričnih oblakov točk, pridobljenih s spletno storitvijo Arc3D. Problem, ki ga rešuje
+orodje Meshlab PHOV je nalaganje in obdelava fotografij izključno v orodju Meshlab.
+
+Arheologom po svetu je programska oprema Meshlab blizu, organiziranih pa je tudi vrsto delavnic za
+spoznavanje s programom, tudi v Sloveniji. Zato bi integracija takšnega orodja v že nek poznan
+program uporabniku olajšala proces spoznavanja in učenja novega orodja.
+
+* Uporaba orodja
+Uporabniški vmesnik za uporabo PHOV orodja v Meshlabu je izjemno preprost, zaradi česar pa je težje sistem
+prilagajati. Vsa komunikacija s storitvijo poteka preko gumba za orodje, ki ima v različnih okoliščinah
+različen pomen. 
+
+#+CAPTION: Gumb PHOV
+#+LABEL: fig:icon
+#+ATTR_LATEX: :width 5cm
+[[./icon.png]]
+
+** Nalaganje modela
+Zaradi preprečevanja napadov je možno procesirati le en set fotografij na enkrat. To storimo s pritiskom
+gumba PHOV. Vmesnik, če dobi od strežnika dovoljenje, omogoči nalaganje fotografij. Po vsakem nalaganju
+nas vmesnik vpraša, če želimo končati. Če odgovorimo z NE, je mogoče ponovno nalagati sete fotografij, sicer
+pa vmesnik sporoči strežniku ukaz za procesiranje.
+
+#+CAPTION: Nalaganje slik
+#+ATTR_LATEX: :width 8cm
+#+LABEL: fig:images
+[[./images.png]]
+
+#+CAPTION: Dodatno nalaganje
+#+ATTR_LATEX: :width 5cm
+#+LABEL: fig:uploadother
+[[./uploadother.png]]
+
+** Čakanje na rezultat
+Zaradi omejitev pri razvoju v okolju Meshlab mora uporabnik sam zahtevati pregled rezultata. S klikom na
+tipko PHOV zahteva poizvedovanje na strežniku. Možne so tri različne posledice:
+- sporočilo "model je še v obdelavi"
+- sporočilo "obdelava ni bila uspešna", vse operacije se prekličejo, uporabnik mora poskusiti znova
+- dialog za shranjevanje rezultata 3D modela
+
+#+CAPTION: Čakanje na rezultat
+#+ATTR_LATEX: :width 5cm
+#+LABEL: fig:waiting
+[[./waiting.png]]
+
+#+CAPTION: Prenos modela
+#+ATTR_LATEX: :width 8cm
+#+LABEL: fig:download
+[[./download.png]]
+
+#+CAPTION: Pridobljeni 3D model
+#+ATTR_LATEX: :width 8cm
+#+LABEL: fig:model
+[[./model.png]]
+
+Ko prenesemo 3D model na računalnik, ga lahko po utečeni metodi
+uvozimo v projekt.
+
+* Namestitev
+Ker orodje še ni na seznamu podprtih orodij, je potrebo za uporabo
+orodja program prevesti ročno na računalniku. Za prevajanje kode na
+računalniku so priložena navodila že znotraj izvorne kode programa
+Meshlab. 
+
+Za vključitev orodja je potrebno:
+- v datoteko /meshlab_full.pro/ dodati za vrstico, ki vsebuje /edit_arc3D/, dodati vrstico z vsebino:o /meshlabplugins/edit_phov \/
+- v direktorij /meshlabplugins/ je potrebno skopirati izvorno kodo orodja
+
+* Dokumentacija kode
+Vsa logika programa se nahaja v datoteki /edit_phov.cpp/. Datoteka /edit_phov_factory.cpp/ je nujno potrebna le za inicializacijo orodja. 
+Vsebina /header/ datotek:
+- /edit_phov_api.h.template/ vsebuje iskalne nize (regex) in URL naslove do API-ja. Za delovanje jo je potrebno preimenovati in vnesti prave URL naslove. 
+- /edit_phov_factory.h/ vsebuje meta podatke za nalaganje orodja.
+- /edit_phov.h/ vsebuje meta podatke za izvajanje kode.
+
+** Dokumentacija najpomembnejših funkcij
+Najpomembnejše funkcije so naslednje:
+- /StartEdit/ - potek orodja
+- /loadSettings/ - nalaganje nastavitev iz INI datoteke
+- /saveSettings/ - shranjevanje nastavitev v INI datoteko
+- /getPhovId/ - pridobitev ID 3D modela
+- /checkDownloadAvailable/ - preveri, ali je 3D model že na voljo oz. če je prišlo do napake
+- /downloadModel/ - iz spleta prenese 3D model
+- /uploadImages/ - nalaganje fotografij
+- /finishUpload/ - zaključi nalaganje fotografij
+- /deleteModel/ - brisanje modela, kar pa trenutno še ni podprto
+
+Vsi zahtevki se delajo na roke. Primer zahtevka za pridobitev ID:
+#+BEGIN_LaTeX
+\begin{lstlisting}
+void EditPhovPlugin::getPhovId() {
+    QNetworkAccessManager nm(this); QEventLoop eventLoop;
+    QUrl url(apiUrlGetId);
+    QByteArray postData;
+    postData.append("notify=mailto:example@email.com");
+    QNetworkRequest request(url);    
+    request.setHeader(QNetworkRequest::ContentTypeHeader, 
+                      "application/x-www-form-urlencoded");
+    QObject::connect(&nm, SIGNAL(finished(QNetworkReply*)),
+                     &eventLoop, SLOT(quit()));
+    QNetworkReply* reply = nm.post(request, postData);
+    eventLoop.exec(); 
+    if (reply->error() == QNetworkReply::NoError) {
+        QRegExp rgx(rxId);
+        int pos = rgx.indexIn(reply->readAll());
+        if (pos > -1) {
+            phovID = rgx.cap(1);
+            saveSettings();
+        } else {}
+    } else {}
+    delete reply;
+}
+\end{lstlisting}
+#+END_LaTeX
+
+

@@ -23,3 +23,8 @@ qrc_*
 moc_*
 Makefile
 edit_phov_api.h
+auto/
+*.log
+*.gz
+*.aux
+*.out
